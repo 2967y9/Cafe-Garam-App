@@ -1,0 +1,15 @@
+{
+  "name": "GARAM 레시피 & 재고관리",
+  "short_name": "GARAM 노트",
+  "description": "GARAM Coffee & Bakery 메뉴 레시피와 날짜별 재고 체크, 여러 기기 동기화를 지원하는 앱",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EDE8D4",
+  "theme_color": "#3B5478",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

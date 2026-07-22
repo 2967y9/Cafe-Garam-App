@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GARAM 레시피 &amp; 재고</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#3B5478">
+<style>
+  :root{
+    --blue:#3B5478;
+    --blue-dark:#2B3F59;
+    --blue-tint:#EAEFF5;
+    --beige:#EDE8D4;
+    --beige-dark:#D8CFA8;
+    --ink:#2B2620;
+    --paper:#FFFFFF;
+    --line:#E4DFC9;
+    --muted:#847E68;
+    --sage:#5F7A54;
+    --sage-bg:#E7EEE0;
+    --danger:#B0392C;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",Roboto,"Segoe UI",sans-serif;
+    background:var(--beige);
+    color:var(--ink);
+    -webkit-tap-highlight-color:transparent;
+    overscroll-behavior-y:none;
+  }
+  #splash{
+    position:fixed; inset:0; z-index:999;
+    background:var(--blue);
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column;
+    transition:opacity .45s ease;
+  }
+  #splash img{ width:58%; max-width:280px; }
+  #splash.hide{ opacity:0; pointer-events:none; }
+
+  #app{
+    max-width:520px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    background:var(--beige);
+    padding-bottom:74px;
+    position:relative;
+    transform-origin:top center;
+  }
+  header.topbar{
+    position:sticky; top:0; z-index:20;
+    background:var(--blue);
+    color:var(--beige);
+    padding:14px 14px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    box-shadow:0 2px 0 rgba(0,0,0,.08);
+  }
+  header.topbar .brand{
+    display:flex; align-items:center; gap:8px;
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:17px;
+    font-weight:700;
+    letter-spacing:.2px;
+  }
+  header.topbar .brand img{ width:28px; height:28px; flex-shrink:0; }
+  header.topbar .right{ display:flex; align-items:center; gap:6px; }
+  .iconbtn{
+    background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.22);
+    color:var(--beige);
+    border-radius:8px;
+    width:34px; height:34px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px;
+  }
+  .iconbtn:disabled{ opacity:.3; }
+  .lockswitch{
+    display:flex; align-items:center; gap:7px;
+    background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.22);
+    border-radius:20px;
+    padding:6px 10px 6px 6px;
+    font-size:12px; font-weight:700; color:var(--beige);
+  }
+  .switch{
+    width:34px; height:19px; border-radius:20px; background:rgba(255,255,255,.28);
+    position:relative; flex-shrink:0;
+  }
+  .switch .knob{
+    position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%;
+    background:#fff; transition:left .18s;
+  }
+  .switch.on{ background:var(--sage); }
+  .switch.on .knob{ left:17px; }
+
+  main{ flex:1; padding:14px 14px 24px; }
+
+  .section-eyebrow{
+    font-size:11px; letter-spacing:1.6px; text-transform:uppercase;
+    color:var(--muted); font-weight:700; margin:18px 4px 8px;
+  }
+  .section-eyebrow:first-child{ margin-top:4px; }
+
+  .ticket{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:4px;
+    margin:0 2px 12px;
+    position:relative;
+    box-shadow:0 1px 2px rgba(43,35,28,.05);
+  }
+  .ticket::before, .ticket::after{
+    content:""; position:absolute; width:14px; height:14px; background:var(--beige);
+    border-radius:50%; top:-7px;
+  }
+  .ticket::before{ left:-7px; } .ticket::after{ right:-7px; }
+  .ticket-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 14px 8px;
+    border-bottom:1px dashed var(--line);
+  }
+  .ticket-name{
+    font-family:Georgia,serif; font-weight:700; font-size:16.5px; color:var(--blue-dark);
+  }
+  .ticket-body{
+    padding:10px 14px 14px;
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:13px; line-height:1.65; white-space:pre-wrap; color:#3d332a;
+  }
+  .ticket-actions{ display:flex; gap:8px; padding:0 14px 12px; }
+  .cat-block{ margin-bottom:6px; }
+  .cat-head{ display:flex; align-items:center; justify-content:space-between; padding:2px 4px; }
+  .cat-title{
+    font-family:Georgia,serif; font-weight:700; font-size:15.5px; color:var(--ink);
+    display:flex; align-items:center; gap:8px;
+  }
+  .cat-title::before{
+    content:""; width:7px; height:7px; border-radius:50%; background:var(--blue); display:inline-block;
+  }
+
+  .btn{
+    border:none; border-radius:8px; padding:9px 14px; font-size:13px; font-weight:600;
+    cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn-ghost{ background:transparent; color:var(--blue-dark); border:1px solid var(--blue-dark); }
+  .btn-danger{ background:transparent; color:var(--danger); border:1px solid var(--danger); }
+  .btn-primary{ background:var(--blue); color:#fff; }
+  .btn-primary:active{ background:var(--blue-dark); }
+  .btn-sage{ background:var(--sage); color:#fff; }
+  .btn-block{ width:100%; justify-content:center; padding:12px; font-size:14px; border-radius:10px;}
+  .btn-sm{ padding:6px 10px; font-size:12px; border-radius:7px; }
+  .btn:disabled{ opacity:.4; }
+
+  .fab{ position:fixed; left:50%; transform:translateX(-50%); bottom:82px; max-width:520px; width:calc(100% - 28px); z-index:15; }
+  .fab .btn{ box-shadow:0 4px 14px rgba(43,63,89,.35); }
+
+  nav.tabbar{
+    position:fixed; bottom:0; left:0; right:0; z-index:20;
+    background:var(--paper); border-top:1px solid var(--line);
+    display:flex; max-width:520px; margin:0 auto;
+  }
+  nav.tabbar button{
+    flex:1; background:none; border:none; padding:10px 4px 12px;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    color:var(--muted); font-size:11px; font-weight:600;
+  }
+  nav.tabbar button.active{ color:var(--blue); }
+  nav.tabbar svg{ width:22px; height:22px; }
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(43,35,28,.5); z-index:50;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  .sheet{
+    background:var(--paper); width:100%; max-width:520px;
+    border-radius:16px 16px 0 0; padding:18px 18px 22px;
+    max-height:88vh; overflow-y:auto;
+  }
+  .sheet h3{ margin:0 0 14px; font-family:Georgia,serif; font-size:18px; color:var(--ink); }
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:5px; }
+  .field input, .field textarea, .field select{
+    width:100%; border:1px solid var(--line); border-radius:8px; padding:10px 11px;
+    font-size:14px; background:#fff; color:var(--ink); font-family:inherit;
+  }
+  .field textarea{ min-height:100px; font-family:"SFMono-Regular",Menlo,Consolas,monospace; font-size:13px; line-height:1.6;}
+  .sheet-actions{ display:flex; gap:10px; margin-top:16px; }
+  .sheet-actions .btn{ flex:1; justify-content:center; }
+
+  .datebar{
+    display:flex; align-items:center; gap:8px; background:var(--paper);
+    border:1px solid var(--line); border-radius:10px; padding:8px 10px; margin-bottom:14px;
+  }
+  .datebar input[type=date]{ flex:1; border:none; font-size:15px; font-weight:600; background:transparent; color:var(--ink);}
+  .datebar button{ background:var(--blue-tint); border:none; color:var(--blue-dark); border-radius:7px; padding:6px 9px; font-size:12px; font-weight:700;}
+  .invrow{
+    display:flex; align-items:center; gap:10px; background:var(--paper);
+    border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px;
+  }
+  .invrow.checked{ background:var(--sage-bg); border-color:#cfdcc4; }
+  .chk{
+    width:24px; height:24px; border-radius:7px; border:2px solid var(--line);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#fff; font-size:15px;
+  }
+  .chk.on{ background:var(--sage); border-color:var(--sage); }
+  .invname{ flex:1; font-size:14.5px; font-weight:600; }
+  .invname.checked-text{ text-decoration:line-through; color:var(--muted); }
+  .invqty{ width:52px; text-align:center; border:1px solid var(--line); border-radius:7px; padding:6px 2px; font-size:13px;}
+  .invrow-actions{ display:flex; gap:4px; }
+  .invnote-wrap{ padding:0 2px 10px; }
+  .invnote{ width:100%; border:1px dashed var(--line); border-radius:7px; padding:7px 9px; font-size:12.5px; background:#fffdf7; }
+
+  .empty{ text-align:center; padding:50px 20px; color:var(--muted); }
+  .empty .big{ font-size:38px; margin-bottom:10px; }
+
+  .settings-row{
+    background:var(--paper); border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px; margin-bottom:12px;
+  }
+  .settings-row .row-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .settings-row .t{ font-size:14px; font-weight:700; }
+  .settings-row .d{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .syncbox{
+    margin-top:12px; background:var(--blue-tint); border-radius:9px; padding:10px 12px;
+  }
+  .synccode{
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace; font-size:13px; font-weight:700;
+    background:#fff; border:1px dashed var(--blue); border-radius:7px; padding:8px 10px; margin:8px 0;
+    word-break:break-all;
+  }
+  .fontscale-row{ display:flex; gap:8px; margin-top:8px; }
+  .fontscale-row button{
+    flex:1; border:1px solid var(--line); background:#fff; border-radius:8px; padding:9px 4px;
+    font-size:12px; font-weight:700; color:var(--ink);
+  }
+  .fontscale-row button.active{ background:var(--blue); color:#fff; border-color:var(--blue); }
+
+  .toast{
+    position:fixed; bottom:92px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:#fff; padding:10px 18px; border-radius:20px;
+    font-size:13px; z-index:99; opacity:0; transition:opacity .25s;
+    max-width:80%; text-align:center;
+  }
+  .toast.show{ opacity:1; }
+  input[type=file]{ display:none; }
+
+  .history-item{
+    display:flex; justify-content:space-between; gap:10px;
+    padding:10px 2px; border-bottom:1px solid var(--line); font-size:13px;
+  }
+  .history-item .msg{ flex:1; }
+  .history-item .ts{ color:var(--muted); font-size:11.5px; white-space:nowrap; }
+</style>
+</head>
+<body>
+<div id="splash"><img src="logo-splash.png" alt="GARAM Coffee & Bakery"></div>
+<div id="app">
+
+  <header class="topbar">
+    <div class="brand"><img src="icon-192.png" alt="logo">GARAM 노트</div>
+    <div class="right">
+      <button class="iconbtn" id="undoBtn" title="실행 취소">↶</button>
+      <button class="iconbtn" id="redoBtn" title="다시 실행">↷</button>
+      <button class="lockswitch" id="lockBtn"><span class="switch" id="lockSwitchEl"><span class="knob"></span></span><span id="lockLabel">잠김</span></button>
+    </div>
+  </header>
+
+  <main id="main"></main>
+
+  <div class="fab" id="fab" style="display:none;">
+    <button class="btn btn-primary btn-block" id="fabBtn">＋ 추가하기</button>
+  </div>
+
+  <nav class="tabbar">
+    <button data-tab="recipe" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v18M6 3h9a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3H6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      레시피
+    </button>
+    <button data-tab="inventory">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4Z" stroke-linejoin="round"/><path d="M3 7v10l9 4 9-4V7" stroke-linejoin="round"/><path d="M12 11v10"/></svg>
+      재고관리
+    </button>
+    <button data-tab="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      설정
+    </button>
+  </nav>
+
+  <input type="file" id="importFile" accept="application/json">
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ================= CONSTANTS ================= */
+const LS_KEY = "cafeOpsData_v2";
+const LS_LOCAL_KEY = "cafeOpsLocal_v2";
+const SYNC_INTERVAL_MS = 7000;
+const JSONBLOB_BASE = "https://jsonblob.com/api/jsonBlob";
+
+/* ================= DEFAULT DATA ================= */
+function defaultData(){
+  return {
+    updatedAt: Date.now(),
+    categories: ["음료 레시피","음료베이스"],
+    recipes: [
+      {id:"r1",cat:"음료 레시피",name:"아메리카노",content:"Hot: 물 250 + 커피 1샷 + 따뜻한 물 가득\nIce: 물 200 + 얼음 가득 + 커피 2샷"},
+      {id:"r2",cat:"음료 레시피",name:"카페라떼",content:"우유 200 + 얼음 가득 + 커피 1샷"},
+      {id:"r3",cat:"음료 레시피",name:"딸기라떼",content:"딸기청 100 + 설탕시럽 2펌프 + 얼음 가득 + 우유 적당량"},
+      {id:"r4",cat:"음료 레시피",name:"바닐라라떼",content:"바닐라시럽 30(5펌프) + 우유 200 + 얼음 가득 + 커피 1샷"},
+      {id:"r5",cat:"음료 레시피",name:"돌체라떼",content:"연유 50 + 우유 200 혼합 → 얼음 가득 + 커피 1샷"},
+      {id:"r6",cat:"음료 레시피",name:"소금커피",content:"솔티베이스 20 + 휘핑 40 혼합 → 아메리카노(커피 1샷)에 붓기"},
+      {id:"r7",cat:"음료 레시피",name:"녹차라떼 (말차)",content:"녹차파우더 40 + 뜨거운 물 20 혼합 → 우유 200 + 얼음 가득에 붓기"},
+      {id:"r8",cat:"음료 레시피",name:"밀크티라떼",content:"밀크티베이스(흑당베이스) 80 + 우유 200 혼합 → 얼음 가득"},
+      {id:"r9",cat:"음료 레시피",name:"초코라떼",content:"초코시럽 50 + 우유 200 혼합 → 얼음 가득"},
+      {id:"r10",cat:"음료 레시피",name:"오곡라떼",content:"오곡파우더 50 + 연유 20 + 우유 200 혼합 → 얼음 가득"},
+      {id:"r11",cat:"음료 레시피",name:"망고요거트",content:"요거트파우더 70 + 우유 200 + 얼음 250 믹서 → 망고스무디 80 넣고 섞어 컵"},
+      {id:"r12",cat:"음료 레시피",name:"블루베리요거트스무디",content:"요거트파우더 70 + 우유 200 + 얼음 250 + 블루베리스무디 80"},
+      {id:"r13",cat:"음료 레시피",name:"레몬에이드",content:"레몬청 100(과육 반·엑기스 반) + 설탕시럽 1펌프 + 레몬시럽 2펌프 + 얼음 + 탄산수 + 데코"},
+      {id:"r14",cat:"음료 레시피",name:"자몽에이드",content:"자몽청 40 + 자몽시럽 40 + 얼음 가득 + 탄산수 + 데코"},
+      {id:"r15",cat:"음료 레시피",name:"청포도에이드",content:"청포도 100 + 탄산수 + 얼음 가득"},
+      {id:"r16",cat:"음료 레시피",name:"오미자에이드",content:"오미자청 100 + 얼음 + 탄산수"},
+      {id:"r17",cat:"음료 레시피",name:"키위주스",content:"소분 키위 1봉지 + 키위스무디 50 + 물 100 믹서 → 얼음 컵"},
+      {id:"r18",cat:"음료 레시피",name:"딸기주스",content:"소분(200g) 1봉지 + 설탕시럽 5펌프 + 물 100 믹서 → 얼음 컵"},
+      {id:"r19",cat:"음료 레시피",name:"바나나주스",content:"소분(200g) 2봉지 + 연유 40 + 우유 150 믹서 → 얼음 컵 (보통 6~7알)"},
+      {id:"r20",cat:"음료 레시피",name:"수박주스",content:"소분 1봉지 + 설탕시럽 3~4번 + 물 조금 믹서 → 얼음 7~8알 컵"},
+      {id:"r21",cat:"음료 레시피",name:"티종류",content:"Hot: 티백 1개 뜨거운 물에 우려서\nIce: 티백 2개 뜨거운 물 소량 우려 → 얼음 가득 + 물"},
+      {id:"r22",cat:"음료 레시피",name:"아이스티",content:"아이스티베이스 80 + 물 150 + 얼음 가득"},
+      {id:"r23",cat:"음료 레시피",name:"아샷추",content:"아이스티베이스 80 + 물 150 + 얼음 가득 + 커피 1샷"},
+      {id:"r24",cat:"음료 레시피",name:"얼그레이 (아이스티·아샷추베이스)",content:"티백 5개 + 뜨거운 물 500 우려 → 파우더에 붓기 → 식혀 냉장\n복숭아아이스티분말(1kg) 넣고 섞어 식혀 냉장보관"},
+      {id:"r25",cat:"음료 레시피",name:"솔티베이스 (참고)",content:"바닐라시럽 5~10ml + 생크림 200ml + 우유 100ml + 연유 40g + 설탕 15~20g + 소금 2~3g\n혼합·녹인 후 핸드믹서 1분 → 냉장고 12시간 숙성"},
+      {id:"r26",cat:"음료 레시피",name:"휘핑만들기",content:"휘핑 250 + 생크림 100 + 설탕시럽 30"},
+      {id:"r27",cat:"음료베이스",name:"아이스티베이스",content:"파우더 500g + 홍차 우린물 1L + 얼그레이 티백 5개 + 설탕 50g"},
+      {id:"r28",cat:"음료베이스",name:"소금커피베이스",content:"휘핑크림 500g + 생크림 200g + 설탕시럽 50g + 솔티드파우더 30g"},
+      {id:"r29",cat:"음료베이스",name:"설탕시럽베이스",content:"백설탕 2kg + 뜨거운 물 1L → 식혀서 냉장고"},
+      {id:"r30",cat:"음료베이스",name:"초코베이스",content:"코코아파우더 200g + 설탕 300g + 뜨거운 물 400ml + 연유 200g"},
+      {id:"r31",cat:"음료베이스",name:"휘핑베이스",content:"생크림 500g + 휘핑크림 500g + 설탕 30g"}
+    ],
+    invItems: [
+      {id:"i1",name:"우유",unit:"개"},{id:"i2",name:"생크림",unit:"개"},{id:"i3",name:"원두",unit:"kg"},
+      {id:"i4",name:"컵(아이스)",unit:"줄"},{id:"i5",name:"컵(핫)",unit:"줄"},{id:"i6",name:"빨대",unit:"봉"}
+    ],
+    invRecords: {},
+    lock: { locked: false },
+    historyLog: []
+  };
+}
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw){ const d = defaultData(); saveData(d); return d; }
+    const parsed = JSON.parse(raw);
+    return Object.assign(defaultData(), parsed);
+  }catch(e){ console.error(e); return defaultData(); }
+}
+function saveData(d){ localStorage.setItem(LS_KEY, JSON.stringify(d)); }
+
+function loadLocalSettings(){
+  try{
+    const raw = localStorage.getItem(LS_LOCAL_KEY);
+    return raw ? Object.assign({fontScale:1, syncEnabled:false, blobId:null, lastSyncedAt:0}, JSON.parse(raw)) : {fontScale:1, syncEnabled:false, blobId:null, lastSyncedAt:0};
+  }catch(e){ return {fontScale:1, syncEnabled:false, blobId:null, lastSyncedAt:0}; }
+}
+function saveLocalSettings(s){ localStorage.setItem(LS_LOCAL_KEY, JSON.stringify(s)); }
+
+let DATA = loadData();
+let localSettings = loadLocalSettings();
+let currentTab = "recipe";
+let currentDate = new Date().toISOString().slice(0,10);
+let undoStack = [];
+let redoStack = [];
+let dirty = false;
+let syncTimer = null;
+
+/* ================= HELPERS ================= */
+function uid(prefix){ return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+function isLocked(){ return !!DATA.lock.locked; }
+function fmtTime(ts){
+  const d = new Date(ts);
+  return d.toLocaleString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+/* ================= HISTORY / COMMIT / UNDO ================= */
+function addHistoryEntry(msg){
+  DATA.historyLog = DATA.historyLog || [];
+  DATA.historyLog.unshift({ts:Date.now(), msg});
+  if(DATA.historyLog.length>200) DATA.historyLog.length = 200;
+}
+
+function commit(label, mutator){
+  const before = JSON.stringify(DATA);
+  mutator(DATA);
+  DATA.updatedAt = Date.now();
+  addHistoryEntry(label);
+  undoStack.push(before);
+  if(undoStack.length>50) undoStack.shift();
+  redoStack = [];
+  saveData(DATA);
+  dirty = true;
+  render();
+}
+
+function undo(){
+  if(undoStack.length===0) return;
+  const cur = JSON.stringify(DATA);
+  const prev = undoStack.pop();
+  redoStack.push(cur);
+  DATA = JSON.parse(prev);
+  addHistoryEntry('변경 내용을 취소했어요');
+  saveData(DATA);
+  dirty = true;
+  render();
+  toast('실행취소');
+}
+function redo(){
+  if(redoStack.length===0) return;
+  const cur = JSON.stringify(DATA);
+  const next = redoStack.pop();
+  undoStack.push(cur);
+  DATA = JSON.parse(next);
+  addHistoryEntry('취소한 내용을 다시 실행했어요');
+  saveData(DATA);
+  dirty = true;
+  render();
+  toast('다시실행');
+}
+function toggleLock(){
+  DATA.lock.locked = !DATA.lock.locked;
+  DATA.updatedAt = Date.now();
+  addHistoryEntry(DATA.lock.locked ? '편집을 잠갔어요' : '편집 잠금을 해제했어요');
+  saveData(DATA);
+  dirty = true;
+  render();
+}
+
+/* ================= RENDER ROOT ================= */
+function render(){
+  updateLockUI();
+  updateUndoRedoButtons();
+  document.querySelectorAll('.tabbar button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.tab === currentTab);
+  });
+  const fab = document.getElementById('fab');
+  const main = document.getElementById('main');
+  if(currentTab === 'recipe'){
+    fab.style.display = 'block';
+    document.getElementById('fabBtn').onclick = ()=>{ if(!isLocked()) openRecipeCategoryChoiceThenAdd(); };
+    fab.querySelector('.btn').disabled = isLocked();
+    renderRecipeTab(main);
+  } else if(currentTab === 'inventory'){
+    fab.style.display = 'block';
+    document.getElementById('fabBtn').onclick = ()=>{ if(!isLocked()) openInvItemSheet(null); };
+    fab.querySelector('.btn').disabled = isLocked();
+    renderInventoryTab(main);
+  } else {
+    fab.style.display = 'none';
+    renderSettingsTab(main);
+  }
+}
+
+function updateLockUI(){
+  const sw = document.getElementById('lockSwitchEl');
+  const label = document.getElementById('lockLabel');
+  sw.classList.toggle('on', !isLocked());
+  label.textContent = isLocked() ? '잠김' : '편집가능';
+}
+function updateUndoRedoButtons(){
+  document.getElementById('undoBtn').disabled = undoStack.length===0;
+  document.getElementById('redoBtn').disabled = redoStack.length===0;
+}
+
+/* ================= RECIPE TAB ================= */
+function renderRecipeTab(main){
+  let html = '';
+  const cats = DATA.categories;
+  if(cats.length===0){
+    html += emptyState('📋','아직 카테고리가 없어요','잠금을 해제하고 카테고리를 추가해보세요.');
+  }
+  cats.forEach(cat=>{
+    const items = DATA.recipes.filter(r=>r.cat===cat);
+    html += `<div class="cat-block">
+      <div class="cat-head">
+        <div class="cat-title">${escapeHtml(cat)}</div>
+        <div style="display:flex;gap:6px;">
+          ${!isLocked() ? `<button class="btn btn-ghost btn-sm" data-editcat="${escapeAttr(cat)}">이름변경</button>
+          <button class="btn btn-danger btn-sm" data-delcat="${escapeAttr(cat)}">삭제</button>` : ''}
+        </div>
+      </div>`;
+    if(items.length===0){
+      html += `<div style="padding:6px 6px 14px;color:var(--muted);font-size:13px;">이 카테고리에 항목이 없어요.</div>`;
+    }
+    items.forEach(it=>{
+      html += `<div class="ticket">
+        <div class="ticket-head"><div class="ticket-name">${escapeHtml(it.name)}</div></div>
+        <div class="ticket-body">${escapeHtml(it.content)}</div>
+        ${!isLocked() ? `<div class="ticket-actions">
+          <button class="btn btn-ghost btn-sm" data-editrecipe="${it.id}">수정</button>
+          <button class="btn btn-danger btn-sm" data-delrecipe="${it.id}">삭제</button>
+        </div>` : ''}
+      </div>`;
+    });
+  });
+  main.innerHTML = html;
+
+  main.querySelectorAll('[data-editrecipe]').forEach(b=>b.onclick=()=>openRecipeSheet(DATA.recipes.find(r=>r.id===b.dataset.editrecipe)));
+  main.querySelectorAll('[data-delrecipe]').forEach(b=>b.onclick=()=>{
+    const r = DATA.recipes.find(x=>x.id===b.dataset.delrecipe);
+    if(confirm(`'${r.name}' 레시피를 삭제할까요?`)){
+      commit(`'${r.name}' 레시피 삭제`, d=>{ d.recipes = d.recipes.filter(x=>x.id!==r.id); });
+      toast('삭제했어요');
+    }
+  });
+  main.querySelectorAll('[data-editcat]').forEach(b=>b.onclick=()=>{
+    const oldName = b.dataset.editcat;
+    const newName = prompt('새 카테고리 이름', oldName);
+    if(newName && newName.trim() && newName.trim()!==oldName){
+      const n = newName.trim();
+      commit(`카테고리 '${oldName}' → '${n}'로 이름 변경`, d=>{
+        d.categories = d.categories.map(c=>c===oldName?n:c);
+        d.recipes.forEach(r=>{ if(r.cat===oldName) r.cat=n; });
+      });
+      toast('변경했어요');
+    }
+  });
+  main.querySelectorAll('[data-delcat]').forEach(b=>b.onclick=()=>{
+    const name = b.dataset.delcat;
+    const count = DATA.recipes.filter(r=>r.cat===name).length;
+    if(confirm(`'${name}' 카테고리를 삭제할까요? 포함된 레시피 ${count}개도 함께 삭제됩니다.`)){
+      commit(`카테고리 '${name}' 삭제`, d=>{
+        d.categories = d.categories.filter(c=>c!==name);
+        d.recipes = d.recipes.filter(r=>r.cat!==name);
+      });
+      toast('삭제했어요');
+    }
+  });
+}
+
+function openRecipeCategoryChoiceThenAdd(){
+  if(DATA.categories.length===0){
+    const cat = prompt('추가할 카테고리 이름을 입력하세요');
+    if(!cat || !cat.trim()) return;
+    commit(`카테고리 '${cat.trim()}' 추가`, d=>{ d.categories.push(cat.trim()); });
+    openRecipeSheet(null, cat.trim());
+    return;
+  }
+  openRecipeSheet(null, DATA.categories[0]);
+}
+
+function openRecipeSheet(recipe, defaultCat){
+  const isNew = !recipe;
+  const cat = recipe ? recipe.cat : (defaultCat || DATA.categories[0] || '');
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="sheet">
+      <h3>${isNew?'레시피 추가':'레시피 수정'}</h3>
+      <div class="field"><label>카테고리</label>
+        <select id="rf-cat">${DATA.categories.map(c=>`<option value="${escapeAttr(c)}" ${c===cat?'selected':''}>${escapeHtml(c)}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>메뉴 이름</label>
+        <input id="rf-name" type="text" value="${recipe?escapeAttr(recipe.name):''}" placeholder="예: 카페라떼"></div>
+      <div class="field"><label>레시피 내용</label>
+        <textarea id="rf-content" placeholder="예: 우유 200 + 얼음 가득 + 커피 1샷">${recipe?escapeHtml(recipe.content):''}</textarea></div>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" id="rf-cancel">취소</button>
+        <button class="btn btn-primary" id="rf-save">저장</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#rf-cancel').onclick = ()=>overlay.remove();
+  overlay.onclick = (e)=>{ if(e.target===overlay) overlay.remove(); };
+  overlay.querySelector('#rf-save').onclick = ()=>{
+    const name = overlay.querySelector('#rf-name').value.trim();
+    const content = overlay.querySelector('#rf-content').value.trim();
+    const catVal = overlay.querySelector('#rf-cat').value;
+    if(!name){ toast('메뉴 이름을 입력해주세요'); return; }
+    if(isNew){
+      commit(`'${name}' 레시피 추가`, d=>{ d.recipes.push({id:uid('r'), cat:catVal, name, content}); });
+    } else {
+      commit(`'${recipe.name}' 레시피 수정`, d=>{
+        const t = d.recipes.find(r=>r.id===recipe.id);
+        t.name=name; t.content=content; t.cat=catVal;
+      });
+    }
+    overlay.remove(); toast('저장했어요');
+  };
+}
+
+/* ================= INVENTORY TAB ================= */
+function getRecord(date){
+  if(!DATA.invRecords[date]) DATA.invRecords[date] = {};
+  return DATA.invRecords[date];
+}
+
+function renderInventoryTab(main){
+  const rec = getRecord(currentDate);
+  let html = `<div class="datebar">
+    <button id="dateBack">◀</button>
+    <input type="date" id="dateInput" value="${currentDate}">
+    <button id="dateFwd">▶</button>
+    <button id="dateToday">오늘</button>
+  </div>`;
+
+  if(DATA.invItems.length===0){
+    html += emptyState('📦','재고 품목이 없어요','아래 + 추가하기 버튼으로 품목을 등록해보세요.');
+  } else {
+    const doneCount = DATA.invItems.filter(it=>rec[it.id] && rec[it.id].checked).length;
+    html += `<div class="section-eyebrow">${currentDate} 체크 현황 · ${doneCount}/${DATA.invItems.length}</div>`;
+    DATA.invItems.forEach(it=>{
+      const r = rec[it.id] || {checked:false, qty:'', note:''};
+      html += `<div class="invrow ${r.checked?'checked':''}" data-invid="${it.id}">
+        <div class="chk ${r.checked?'on':''}" data-chk="${it.id}">${r.checked?'✓':''}</div>
+        <div class="invname ${r.checked?'checked-text':''}">${escapeHtml(it.name)}</div>
+        <input class="invqty" data-qty="${it.id}" placeholder="${escapeAttr(it.unit||'')}" value="${escapeAttr(r.qty||'')}">
+        ${!isLocked() ? `<div class="invrow-actions">
+          <button class="btn btn-ghost btn-sm" data-edititem="${it.id}">수정</button>
+          <button class="btn btn-danger btn-sm" data-delitem="${it.id}">삭제</button>
+        </div>` : ''}
+      </div>
+      <div class="invnote-wrap"><input class="invnote" data-note="${it.id}" placeholder="메모 (선택)" value="${escapeAttr(r.note||'')}"></div>`;
+    });
+  }
+  main.innerHTML = html;
+
+  main.querySelector('#dateInput').onchange = (e)=>{ currentDate = e.target.value; render(); };
+  main.querySelector('#dateBack').onclick = ()=>shiftDate(-1);
+  main.querySelector('#dateFwd').onclick = ()=>shiftDate(1);
+  main.querySelector('#dateToday').onclick = ()=>{ currentDate = new Date().toISOString().slice(0,10); render(); };
+
+  main.querySelectorAll('[data-chk]').forEach(el=>el.onclick=()=>{
+    const id = el.dataset.chk;
+    const it = DATA.invItems.find(x=>x.id===id);
+    commit(`'${it.name}' 체크 ${rec[id]&&rec[id].checked?'해제':'완료'} (${currentDate})`, d=>{
+      const r2 = getRecord(currentDate);
+      const cur = r2[id] || (r2[id]={checked:false, qty:'', note:''});
+      cur.checked = !cur.checked;
+    });
+  });
+  main.querySelectorAll('[data-qty]').forEach(el=>el.onchange=()=>{
+    const id = el.dataset.qty;
+    const it = DATA.invItems.find(x=>x.id===id);
+    const val = el.value;
+    commit(`'${it.name}' 수량 입력 (${currentDate})`, d=>{
+      const r2 = getRecord(currentDate);
+      const cur = r2[id] || (r2[id]={checked:false, qty:'', note:''});
+      cur.qty = val;
+    });
+  });
+  main.querySelectorAll('[data-note]').forEach(el=>el.onchange=()=>{
+    const id = el.dataset.note;
+    const it = DATA.invItems.find(x=>x.id===id);
+    const val = el.value;
+    commit(`'${it.name}' 메모 수정 (${currentDate})`, d=>{
+      const r2 = getRecord(currentDate);
+      const cur = r2[id] || (r2[id]={checked:false, qty:'', note:''});
+      cur.note = val;
+    });
+  });
+  main.querySelectorAll('[data-edititem]').forEach(b=>b.onclick=()=>openInvItemSheet(DATA.invItems.find(x=>x.id===b.dataset.edititem)));
+  main.querySelectorAll('[data-delitem]').forEach(b=>b.onclick=()=>{
+    const it = DATA.invItems.find(x=>x.id===b.dataset.delitem);
+    if(confirm(`'${it.name}' 품목을 삭제할까요? (모든 날짜 기록에서 사라집니다)`)){
+      commit(`'${it.name}' 재고 품목 삭제`, d=>{ d.invItems = d.invItems.filter(x=>x.id!==it.id); });
+      toast('삭제했어요');
+    }
+  });
+}
+
+function shiftDate(delta){
+  const d = new Date(currentDate);
+  d.setDate(d.getDate()+delta);
+  currentDate = d.toISOString().slice(0,10);
+  render();
+}
+
+function openInvItemSheet(item){
+  const isNew = !item;
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="sheet">
+      <h3>${isNew?'재고 품목 추가':'품목 수정'}</h3>
+      <div class="field"><label>품목명</label>
+        <input id="if-name" type="text" value="${item?escapeAttr(item.name):''}" placeholder="예: 우유"></div>
+      <div class="field"><label>단위 (선택)</label>
+        <input id="if-unit" type="text" value="${item?escapeAttr(item.unit):''}" placeholder="예: 개, kg, 봉"></div>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" id="if-cancel">취소</button>
+        <button class="btn btn-primary" id="if-save">저장</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#if-cancel').onclick = ()=>overlay.remove();
+  overlay.onclick = (e)=>{ if(e.target===overlay) overlay.remove(); };
+  overlay.querySelector('#if-save').onclick = ()=>{
+    const name = overlay.querySelector('#if-name').value.trim();
+    const unit = overlay.querySelector('#if-unit').value.trim();
+    if(!name){ toast('품목명을 입력해주세요'); return; }
+    if(isNew){
+      commit(`'${name}' 재고 품목 추가`, d=>{ d.invItems.push({id:uid('i'), name, unit}); });
+    } else {
+      commit(`재고 품목 '${item.name}' → '${name}'로 수정`, d=>{
+        const t = d.invItems.find(x=>x.id===item.id);
+        t.name = name; t.unit = unit;
+      });
+    }
+    overlay.remove(); toast('저장했어요');
+  };
+}
+
+/* ================= SETTINGS TAB ================= */
+function renderSettingsTab(main){
+  const fs = localSettings.fontScale;
+  main.innerHTML = `
+    <div class="section-eyebrow">편집 잠금</div>
+    <div class="settings-row">
+      <div class="row-top">
+        <div>
+          <div class="t">${isLocked() ? '현재: 잠김' : '현재: 편집 가능'}</div>
+          <div class="d">토글을 눌러 바로 켜고 끌 수 있어요.</div>
+        </div>
+        <button class="btn ${isLocked()?'btn-sage':'btn-primary'} btn-sm" id="lockToggleBtn">${isLocked()?'해제':'잠그기'}</button>
+      </div>
+    </div>
+
+    <div class="section-eyebrow">글자 크기</div>
+    <div class="settings-row">
+      <div class="d">화면 전체 글자 크기를 조절해요.</div>
+      <div class="fontscale-row">
+        <button data-fs="0.85" class="${fs===0.85?'active':''}">작게</button>
+        <button data-fs="1" class="${fs===1?'active':''}">보통</button>
+        <button data-fs="1.15" class="${fs===1.15?'active':''}">크게</button>
+        <button data-fs="1.3" class="${fs===1.3?'active':''}">아주 크게</button>
+      </div>
+    </div>
+
+    <div class="section-eyebrow">여러 기기 동기화</div>
+    <div class="settings-row">
+      <div class="row-top">
+        <div>
+          <div class="t">${localSettings.syncEnabled ? '동기화 사용 중' : '동기화 꺼짐'}</div>
+          <div class="d">약 7초마다 자동으로 다른 기기와 내용을 맞춰요.</div>
+        </div>
+        <span class="switch ${localSettings.syncEnabled?'on':''}" id="syncSwitchEl" style="cursor:pointer;"><span class="knob"></span></span>
+      </div>
+      ${localSettings.syncEnabled ? `
+        <div class="syncbox">
+          <div style="font-size:12px;color:var(--muted);">이 코드를 다른 기기 설정에서 입력하면 같은 내용을 볼 수 있어요.</div>
+          <div class="synccode" id="syncCodeText">${escapeHtml(localSettings.blobId||'')}</div>
+          <button class="btn btn-ghost btn-sm" id="copyCodeBtn">코드 복사</button>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:8px;" id="lastSyncText">마지막 동기화: ${localSettings.lastSyncedAt ? fmtTime(localSettings.lastSyncedAt) : '아직 없음'}</div>
+        </div>
+      ` : `
+        <div class="syncbox">
+          <button class="btn btn-primary btn-sm" id="createSyncBtn" style="width:100%;justify-content:center;margin-bottom:10px;">새 동기화 시작하기</button>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">이미 다른 기기에서 동기화를 시작했다면, 그 코드를 입력하세요.</div>
+          <div style="display:flex;gap:8px;">
+            <input id="joinCodeInput" placeholder="동기화 코드 붙여넣기" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:13px;">
+            <button class="btn btn-ghost btn-sm" id="joinSyncBtn">연결</button>
+          </div>
+        </div>
+      `}
+    </div>
+
+    <div class="section-eyebrow">변경 이력</div>
+    <div class="settings-row">
+      <div class="row-top">
+        <div>
+          <div class="t">누가 무엇을 바꿨는지 기록</div>
+          <div class="d">최근 ${DATA.historyLog.length}건 기록됨</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="historyBtn">열람</button>
+      </div>
+    </div>
+
+    <div class="section-eyebrow">데이터 내보내기 / 가져오기</div>
+    <div class="settings-row row-top">
+      <div><div class="t">내보내기</div><div class="d">파일로 저장해 다른 기기로 옮길 수 있어요.</div></div>
+      <button class="btn btn-primary btn-sm" id="exportBtn">내보내기</button>
+    </div>
+    <div class="settings-row row-top">
+      <div><div class="t">가져오기</div><div class="d">내보낸 파일을 불러와 덮어씁니다.</div></div>
+      <button class="btn btn-ghost btn-sm" id="importBtn">가져오기</button>
+    </div>
+
+    <div class="section-eyebrow">기타</div>
+    <div class="settings-row row-top">
+      <div><div class="t">전체 초기화</div><div class="d">모든 레시피/재고 기록을 삭제합니다.</div></div>
+      <button class="btn btn-danger btn-sm" id="resetBtn">초기화</button>
+    </div>
+
+    <div style="text-align:center;color:var(--muted);font-size:11.5px;margin-top:24px;line-height:1.7;">
+      GARAM Coffee &amp; Bakery 운영 노트
+    </div>
+  `;
+
+  main.querySelector('#lockToggleBtn').onclick = ()=>{ toggleLock(); toast(isLocked()?'':'잠갔어요'); };
+  main.querySelectorAll('[data-fs]').forEach(b=>b.onclick=()=>{
+    localSettings.fontScale = parseFloat(b.dataset.fs);
+    saveLocalSettings(localSettings);
+    applyFontScale();
+    render();
+  });
+
+  const syncSwitchEl = main.querySelector('#syncSwitchEl');
+  if(syncSwitchEl) syncSwitchEl.onclick = ()=>{
+    if(localSettings.syncEnabled){
+      if(confirm('동기화를 끌까요? 이 기기는 더 이상 다른 기기와 자동으로 맞춰지지 않아요.')){
+        disableSync(); render();
+      }
+    } else {
+      render(); // just re-render to show create/join box (already shown since off)
+    }
+  };
+  const createBtn = main.querySelector('#createSyncBtn');
+  if(createBtn) createBtn.onclick = ()=>{ createBtn.disabled=true; createBtn.textContent='만드는 중...'; createSyncRoom(); };
+  const joinBtn = main.querySelector('#joinSyncBtn');
+  if(joinBtn) joinBtn.onclick = ()=>{
+    const code = main.querySelector('#joinCodeInput').value.trim();
+    if(!code){ toast('코드를 입력해주세요'); return; }
+    joinBtn.disabled = true; joinBtn.textContent='연결중';
+    joinSyncRoom(code);
+  };
+  const copyBtn = main.querySelector('#copyCodeBtn');
+  if(copyBtn) copyBtn.onclick = ()=>{
+    const text = localSettings.blobId || '';
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(()=>toast('복사했어요')).catch(()=>toast('복사 실패'));
+    } else { toast('이 브라우저에서는 직접 선택해서 복사해주세요'); }
+  };
+
+  main.querySelector('#historyBtn').onclick = openHistorySheet;
+  main.querySelector('#exportBtn').onclick = doExport;
+  main.querySelector('#importBtn').onclick = ()=>document.getElementById('importFile').click();
+  main.querySelector('#resetBtn').onclick = ()=>{
+    if(confirm('정말 모든 데이터를 초기화할까요? 이 작업은 되돌릴 수 없어요.')){
+      DATA = defaultData(); saveData(DATA); dirty = true; undoStack=[]; redoStack=[]; render(); toast('초기화했어요');
+    }
+  };
+}
+
+function openHistorySheet(){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  const items = DATA.historyLog || [];
+  overlay.innerHTML = `
+    <div class="sheet">
+      <h3>변경 이력</h3>
+      ${items.length===0 ? '<div class="empty" style="padding:30px 10px;">아직 기록이 없어요.</div>' :
+        items.map(h=>`<div class="history-item"><div class="msg">${escapeHtml(h.msg)}</div><div class="ts">${fmtTime(h.ts)}</div></div>`).join('')}
+      <div class="sheet-actions"><button class="btn btn-primary" id="hist-close" style="flex:1;justify-content:center;">닫기</button></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#hist-close').onclick = ()=>overlay.remove();
+  overlay.onclick = (e)=>{ if(e.target===overlay) overlay.remove(); };
+}
+
+/* ================= EXPORT / IMPORT ================= */
+function doExport(){
+  const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = `garam-cafe-data-${stamp}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  toast('파일로 내보냈어요');
+}
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const parsed = JSON.parse(reader.result);
+      if(!parsed.recipes || !parsed.invItems){ throw new Error('형식이 올바르지 않습니다'); }
+      if(confirm('가져온 파일로 현재 데이터를 덮어쓸까요?')){
+        DATA = Object.assign(defaultData(), parsed);
+        DATA.updatedAt = Date.now();
+        addHistoryEntry('파일에서 데이터를 가져왔어요');
+        saveData(DATA); dirty = true; undoStack=[]; redoStack=[];
+        render(); toast('가져오기 완료');
+      }
+    }catch(err){ alert('파일을 읽는 데 실패했어요. 올바른 내보내기 파일인지 확인해주세요.'); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+/* ================= SYNC ENGINE (jsonblob.com) ================= */
+function updateSyncUIQuiet(){
+  const el = document.getElementById('lastSyncText');
+  if(el) el.textContent = '마지막 동기화: ' + (localSettings.lastSyncedAt ? fmtTime(localSettings.lastSyncedAt) : '아직 없음');
+}
+
+async function createSyncRoom(){
+  try{
+    const res = await fetch(JSONBLOB_BASE, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify(DATA)
+    });
+    if(!res.ok) throw new Error('create failed');
+    const loc = res.headers.get('Location');
+    if(!loc) throw new Error('no location header');
+    const blobId = loc.split('/').filter(Boolean).pop();
+    localSettings.blobId = blobId;
+    localSettings.syncEnabled = true;
+    localSettings.lastSyncedAt = Date.now();
+    saveLocalSettings(localSettings);
+    startSyncLoop();
+    render();
+    toast('동기화를 시작했어요');
+  }catch(e){
+    alert('동기화를 시작하지 못했어요. 인터넷 연결을 확인해주세요.');
+    render();
+  }
+}
+
+async function joinSyncRoom(blobId){
+  try{
+    const res = await fetch(`${JSONBLOB_BASE}/${blobId}`, {headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error('not found');
+    const remote = await res.json();
+    DATA = Object.assign(defaultData(), remote);
+    addHistoryEntry('다른 기기와 동기화를 연결했어요');
+    saveData(DATA);
+    localSettings.blobId = blobId;
+    localSettings.syncEnabled = true;
+    localSettings.lastSyncedAt = Date.now();
+    saveLocalSettings(localSettings);
+    dirty = false;
+    startSyncLoop();
+    render();
+    toast('동기화 연결 완료');
+  }catch(e){
+    alert('코드를 찾을 수 없어요. 코드를 다시 확인해주세요.');
+    render();
+  }
+}
+
+function disableSync(){
+  localSettings.syncEnabled = false;
+  saveLocalSettings(localSettings);
+  stopSyncLoop();
+}
+
+function startSyncLoop(){
+  stopSyncLoop();
+  syncTimer = setInterval(syncTick, SYNC_INTERVAL_MS);
+  syncTick();
+}
+function stopSyncLoop(){ if(syncTimer){ clearInterval(syncTimer); syncTimer=null; } }
+
+async function syncTick(){
+  if(!localSettings.syncEnabled || !localSettings.blobId) return;
+  try{
+    const res = await fetch(`${JSONBLOB_BASE}/${localSettings.blobId}`, {headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error('get failed');
+    const remote = await res.json();
+    if(remote && typeof remote.updatedAt === 'number' && remote.updatedAt > DATA.updatedAt){
+      DATA = Object.assign(defaultData(), remote);
+      saveData(DATA);
+      dirty = false;
+      render();
+    } else if(dirty){
+      await pushToRemote();
+    }
+    localSettings.lastSyncedAt = Date.now();
+    saveLocalSettings(localSettings);
+    updateSyncUIQuiet();
+  }catch(e){ /* offline or blocked, skip quietly */ }
+}
+
+async function pushToRemote(){
+  try{
+    const res = await fetch(`${JSONBLOB_BASE}/${localSettings.blobId}`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify(DATA)
+    });
+    if(res.ok) dirty = false;
+  }catch(e){ /* ignore */ }
+}
+
+/* ================= FONT SCALE ================= */
+function applyFontScale(){
+  document.getElementById('app').style.zoom = localSettings.fontScale;
+}
+
+/* ================= UTIL ================= */
+function escapeHtml(s){
+  return String(s??'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+function emptyState(icon,title,desc){
+  return `<div class="empty"><div class="big">${icon}</div><div style="font-weight:700;color:var(--ink);margin-bottom:6px;">${title}</div><div>${desc}</div></div>`;
+}
+
+/* ================= NAV & INIT ================= */
+document.querySelectorAll('.tabbar button').forEach(b=>{
+  b.onclick = ()=>{ currentTab = b.dataset.tab; render(); };
+});
+document.getElementById('lockBtn').onclick = ()=>toggleLock();
+document.getElementById('undoBtn').onclick = ()=>undo();
+document.getElementById('redoBtn').onclick = ()=>redo();
+
+applyFontScale();
+render();
+if(localSettings.syncEnabled && localSettings.blobId) startSyncLoop();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+
+/* ================= SPLASH ================= */
+window.addEventListener('load', ()=>{
+  setTimeout(()=>{
+    const sp = document.getElementById('splash');
+    sp.classList.add('hide');
+    setTimeout(()=>{ sp.style.display='none'; }, 500);
+  }, 1000);
+});
+</script>
+</body>
+</html>
